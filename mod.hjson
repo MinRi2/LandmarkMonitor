@@ -11,7 +11,7 @@ author: "minRi2"
 main: "monitor.LandmarkMonitor"
 
 #the mod description as seen in the mod dialog
-description: "A Mindustry Java mod template."
+description: "Monitoring your teammates or enemies attack!"
 
 #the mod version
 version: 1.0
