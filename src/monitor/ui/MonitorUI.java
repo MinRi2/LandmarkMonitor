@@ -19,8 +19,6 @@ public class MonitorUI{
     private static Element hitter;
 
     public static void init(){
-        MonitorTex.init();
-
         playerSelector = new PlayerSelector();
         main = new MainTable();
 
