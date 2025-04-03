@@ -34,10 +34,12 @@ public class MainTable extends Window{
             Draw.z(Layer.overlayUI);
             for(MonitorViewer viewer : viewers){
                 viewer.drawMark();
+
                 if(drawRange){
                     viewer.drawRange();
                 }
             }
+            Draw.reset();
         });
 
         Events.run(Trigger.postDraw, () -> {
@@ -87,6 +89,15 @@ public class MainTable extends Window{
 
         Monitor monitor = new Monitor(x, y);
         MonitorViewer monitorViewer = new MonitorViewer(monitor);
+
+        if(viewers.any()){
+            MonitorViewer lastViewer = viewers.peek();
+            monitorViewer.alpha = lastViewer.alpha;
+            monitorViewer.resolution = lastViewer.resolution;
+            monitorViewer.viewWidth = lastViewer.viewWidth;
+            monitorViewer.viewHeight = lastViewer.viewHeight;
+            monitorViewer.updateInterval = lastViewer.updateInterval;
+        }
 
         monitorGroup.addChild(monitorViewer);
         viewers.add(monitorViewer);

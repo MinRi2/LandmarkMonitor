@@ -134,4 +134,12 @@ public class Window extends SavedTable{
         super.pack();
         setPosition(x, y, packAlign);
     }
+
+    public void unpack(){
+        float x = getX(packAlign);
+        float y = getY(packAlign);
+        setSize(Math.max(width, getMinWidth()), Math.max(height, getMinHeight()));
+        setPosition(x, y, packAlign);
+        keepInStage();
+    }
 }

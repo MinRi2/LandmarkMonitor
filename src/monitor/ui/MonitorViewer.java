@@ -8,7 +8,6 @@ import arc.math.*;
 import arc.scene.actions.*;
 import arc.scene.event.*;
 import arc.scene.style.*;
-import arc.scene.ui.*;
 import arc.scene.ui.layout.*;
 import arc.util.*;
 import mindustry.*;
@@ -28,14 +27,18 @@ public class MonitorViewer extends Window{
     public static final int minUpdateTime = 0, maxUpdateTime = 60;
     public static final int minResolution = 1, maxResolution = 8;
 
-    public static final float minImageSize = 256f, minSizeScale = 4f, imagePrefSizeScale = 4f;
+    public static final float minImageSize = 256f, minSizeScale = 4f;
+    public static final String VIERWER_NAME = "monitor-viewer";
+
+    private static int nextId = 1;
 
     public float viewWidth = 32, viewHeight = 32;
     public float updateInterval = 10;
     public int resolution = 2;
     public float alpha = 0.8f;
+    public final int id = nextId++;
 
-    public boolean showConfig = false;
+    public boolean showConfig = true;
     private final Interval timer = new Interval();
     private final TextureRegion region = new TextureRegion();
 
@@ -47,11 +50,13 @@ public class MonitorViewer extends Window{
 
     @SuppressWarnings("unchecked")
     public MonitorViewer(Monitor monitor){
-        super("monitor-viewer", true);
+        super(VIERWER_NAME, true);
 
         this.monitor = monitor;
-
         setup();
+
+        name = VIERWER_NAME + "-" + id;
+        read();
 
         // no pane
         getCell(pane).setElement(cont);
@@ -83,10 +88,9 @@ public class MonitorViewer extends Window{
     }
 
     public void drawMark(){
-        Draw.color(Pal.accent);
-        Draw.alpha(0.3f);
+        Draw.color(Pal.accent, 0.8f);
         Lines.dashCircle(x, y, 4);
-        Draw.alpha(1);
+        Draw.reset();
     }
 
     public void drawRange(){
@@ -101,10 +105,14 @@ public class MonitorViewer extends Window{
     protected void setupTitle(Table table){
         super.setupTitle(table);
 
-        table.label(() -> monitorEntity == null ? "" : monitorEntity.coloredName())
-        .style(Styles.outlineLabel).labelAlign(Align.right).ellipsis(true).minWidth(72f).pad(4f).growX();
-        table.label(() -> "" + Tmp.v1.set(World.toTile(monitor.x), World.toTile(monitor.y)))
-        .style(Styles.outlineLabel).minWidth(180f).pad(4f).right();
+        table.table(info -> {
+            info.defaults().minWidth(0).growX().right();
+
+            info.label(() -> monitorEntity == null ? "" : monitorEntity.coloredName())
+            .style(Styles.outlineLabel).labelAlign(Align.right).ellipsis(true).pad(4f);
+            info.label(() -> "" + Tmp.v1.set(World.toTile(monitor.x), World.toTile(monitor.y)))
+            .style(Styles.outlineLabel).ellipsis(true).minWidth(80f).pad(4f);
+        }).padLeft(4f).grow();
     }
 
     @Override
@@ -182,7 +190,7 @@ public class MonitorViewer extends Window{
 
             t.slider(minUpdateTime, maxUpdateTime, 5, updateInterval, f -> {
                 updateInterval = f;
-            }).padLeft(8).width(64f);
+            }).padLeft(8).grow();
         }).row();
         table.table(null, t -> {
             t.label(() -> Core.bundle.format("monitor-alpha", alpha * 100))
@@ -191,7 +199,7 @@ public class MonitorViewer extends Window{
             t.slider(0, 100, 5 , alpha * 100, f -> {
                 alpha = f / 100;
                 image.actions(Actions.alpha(alpha, 0.5f, Interp.pow2));
-            }).padLeft(8).width(64f);
+            }).padLeft(8).grow();
         }).row();
         table.table(null, t -> {
             t.label(() -> Core.bundle.format("monitor-resolution", resolution))
@@ -199,7 +207,7 @@ public class MonitorViewer extends Window{
 
             t.slider(minResolution, maxResolution, 1, resolution, f -> {
                 resolution = (int)f;
-            }).padLeft(8).width(64f);
+            }).padLeft(8).grow();
         }).row();
         table.table(null, t -> {
             t.label(() -> Core.bundle.format("monitor-width", viewWidth))
@@ -207,7 +215,7 @@ public class MonitorViewer extends Window{
 
             t.slider(minWidth, maxWidth, 1, viewWidth, f -> {
                 viewWidth = f;
-            }).padLeft(8).width(64f);
+            }).padLeft(8).grow();
         }).row();
         table.table(null, t -> {
             t.label(() -> Core.bundle.format("monitor-height", viewHeight))
@@ -215,7 +223,7 @@ public class MonitorViewer extends Window{
 
             t.slider(minHeight, maxHeight, 1, viewHeight, f -> {
                 viewHeight = f;
-            }).padLeft(8).width(64f);
+            }).padLeft(8).grow();
         });
     }
 
@@ -247,7 +255,7 @@ public class MonitorViewer extends Window{
 
         if(showConfig){
             act(0); // children update first
-            pack();
+            unpack();
         }
     }
 

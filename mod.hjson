@@ -8,7 +8,7 @@ name: "landmark-monitor"
 author: "minRi2"
 
 #the fully qualified main class of the mod
-main: "monitor.LandmarkMonitor"
+main: "monitor.LandmarkMonitorMod"
 
 #the mod description as seen in the mod dialog
 description: "Monitoring your teammates or enemies attack!"
