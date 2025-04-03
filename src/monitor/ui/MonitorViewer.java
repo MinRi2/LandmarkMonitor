@@ -28,17 +28,16 @@ public class MonitorViewer extends Window{
     public static final int minResolution = 1, maxResolution = 8;
 
     public static final float minImageSize = 256f, minSizeScale = 4f;
-    public static final String VIERWER_NAME = "monitor-viewer";
-
-    private static int nextId = 1;
+    public static final String VIEWER_NAME = "monitor-viewer";
 
     public float viewWidth = 32, viewHeight = 32;
     public float updateInterval = 10;
     public int resolution = 2;
     public float alpha = 0.8f;
-    public final int id = nextId++;
+    public int id;
 
     public boolean showConfig = true;
+    public boolean isRemoved;
     private final Interval timer = new Interval();
     private final TextureRegion region = new TextureRegion();
 
@@ -49,13 +48,14 @@ public class MonitorViewer extends Window{
     private BorderImage image;
 
     @SuppressWarnings("unchecked")
-    public MonitorViewer(Monitor monitor){
-        super(VIERWER_NAME, true);
+    public MonitorViewer(Monitor monitor, int id){
+        super(VIEWER_NAME, true);
 
         this.monitor = monitor;
-        setup();
+        this.id = id;
 
-        name = VIERWER_NAME + "-" + id;
+        setup();
+        name = VIEWER_NAME + "-" + id;
         read();
 
         // no pane
@@ -246,10 +246,6 @@ public class MonitorViewer extends Window{
         }
     }
 
-    public boolean isRemoved(){
-        return !hasParent();
-    }
-
     public void setShowConfig(boolean showConfig){
         this.showConfig = showConfig;
 
@@ -263,6 +259,7 @@ public class MonitorViewer extends Window{
     protected void onRemoved(){
         super.onRemoved();
 
+        isRemoved = true;
         monitor.dispose();
     }
 

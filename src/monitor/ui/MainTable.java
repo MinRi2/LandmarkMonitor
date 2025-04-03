@@ -2,9 +2,12 @@ package monitor.ui;
 
 import arc.*;
 import arc.graphics.g2d.*;
+import arc.math.*;
 import arc.math.geom.*;
+import arc.scene.actions.*;
 import arc.scene.ui.layout.*;
 import arc.struct.*;
+import arc.util.*;
 import mindustry.game.EventType.*;
 import mindustry.gen.*;
 import mindustry.graphics.*;
@@ -16,23 +19,30 @@ import monitor.*;
  * Create by 2025/4/2
  */
 public class MainTable extends Window{
-    public boolean drawRange;
+    public static final int maxMonitorSize = 8;
+
+    public boolean drawRange, hideViewer;
     public WidgetGroup monitorGroup;
 
-    private final Seq<MonitorViewer> viewers = new Seq<>();
+    private final Seq<MonitorViewer> viewers = new Seq<>(maxMonitorSize);
     private boolean renderingTexture = false;
 
     public MainTable(){
         super("monitor-main", false);
 
+        Core.scene.add(monitorGroup = new WidgetGroup());
+
         setup();
         read();
 
         Events.run(Trigger.draw, () -> {
-            if(renderingTexture) return;
+            if(renderingTexture || !monitorGroup.visible) return;
+
+            viewers.removeAll(viewer -> viewer.isRemoved);
 
             Draw.z(Layer.overlayUI);
             for(MonitorViewer viewer : viewers){
+                if(!viewer.visible) continue;
                 viewer.drawMark();
 
                 if(drawRange){
@@ -43,12 +53,11 @@ public class MainTable extends Window{
         });
 
         Events.run(Trigger.postDraw, () -> {
-            if(renderingTexture) return;
-
-            viewers.removeAll(MonitorViewer::isRemoved);
+            if(renderingTexture || !monitorGroup.visible) return;
 
             renderingTexture = true;
             for(MonitorViewer viewer : viewers){
+                if(!viewer.visible) continue;
                 viewer.updateTexture();
             }
             renderingTexture = false;
@@ -70,25 +79,41 @@ public class MainTable extends Window{
         cont.table(buttons -> {
             buttons.defaults().pad(4f).margin(4f).growX();
 
-            buttons.button("创建监视器", Icon.addSmall, Styles.flatt, 32, () -> {
+            buttons.button("@monitor.create", Icon.addSmall, Styles.flatt, 32, () -> {
                 Vec2 pos = Core.camera.position;
                 createMonitorAt(pos.x, pos.y);
-            }).row();
+            }).disabled(b -> viewers.size >= maxMonitorSize).row();
 
-            buttons.button("绘制范围", Icon.infoCircleSmall, Styles.flatTogglet, 32, () -> {
+            buttons.defaults().padTop(4);
+
+            buttons.button("@monitor.drawRange", Icon.infoCircleSmall, Styles.flatTogglet, 32, () -> {
                 drawRange = !drawRange;
-            }).checked(b -> drawRange).padTop(4);
+            }).checked(b -> drawRange).row();
+
+            buttons.button("@monitor.hideViewer", Icon.eyeOffSmall, Styles.flatTogglet, 32, () -> {
+                hideViewer = !hideViewer;
+                monitorGroup.visible = true;
+                monitorGroup.actions(
+                    Actions.alpha(hideViewer ? 0 : 1, 0.2f, hideViewer ? Interp.pow2In : Interp.pow2Out),
+                    Actions.visible(!hideViewer)
+                );
+            }).checked(b -> hideViewer).row();
+
+            buttons.button("@monitor.remove", Icon.cancelSmall, Styles.flatt, 32, () -> {
+                for(MonitorViewer viewer : viewers){
+                    viewer.actions(Actions.delay(0.05f * viewer.id), Actions.remove());
+                }
+            }).row();
         }).growX();
     }
 
     public void createMonitorAt(float x, float y){
-        if(monitorGroup == null){
-            monitorGroup = new WidgetGroup();
-            Core.scene.add(monitorGroup);
-        }
+        if(viewers.size >= maxMonitorSize) return;
+
+        int id = findViewerId();
 
         Monitor monitor = new Monitor(x, y);
-        MonitorViewer monitorViewer = new MonitorViewer(monitor);
+        MonitorViewer monitorViewer = new MonitorViewer(monitor, id);
 
         if(viewers.any()){
             MonitorViewer lastViewer = viewers.peek();
@@ -97,9 +122,28 @@ public class MainTable extends Window{
             monitorViewer.viewWidth = lastViewer.viewWidth;
             monitorViewer.viewHeight = lastViewer.viewHeight;
             monitorViewer.updateInterval = lastViewer.updateInterval;
+            monitorViewer.showConfig = lastViewer.showConfig;
         }
+
+        float offset = 64f * (id - 1);
+        monitorViewer.setPosition(Core.scene.getWidth() * 0.3f + offset, Core.scene.getHeight() * 0.5f - offset, Align.bottomLeft);
+        monitorViewer.keepInStage();
+
+        monitorViewer.actions(
+        Actions.alpha(0),
+        Actions.alpha(1, 0.2f, Interp.pow2In)
+        );
 
         monitorGroup.addChild(monitorViewer);
         viewers.add(monitorViewer);
+    }
+
+    private int findViewerId(){
+        int id = 1;
+        if(viewers.isEmpty()) return id;
+        for(MonitorViewer viewer : viewers){
+            if(id++ != viewer.id) return id;
+        }
+        return id;
     }
 }

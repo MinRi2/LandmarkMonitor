@@ -5,6 +5,7 @@ import arc.graphics.*;
 import arc.graphics.g2d.*;
 import arc.math.geom.*;
 import arc.scene.*;
+import arc.scene.actions.*;
 import arc.scene.event.*;
 import mindustry.*;
 

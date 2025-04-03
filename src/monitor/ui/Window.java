@@ -6,6 +6,8 @@ import MinRi2.ModCore.ui.operator.*;
 import arc.*;
 import arc.math.*;
 import arc.math.geom.*;
+import arc.scene.*;
+import arc.scene.actions.*;
 import arc.scene.ui.*;
 import arc.scene.ui.layout.*;
 import arc.util.*;
@@ -29,6 +31,8 @@ public class Window extends SavedTable{
     private final RotatedImage image = new RotatedImage(Icon.upSmall, 180);
     protected ScrollPane pane;
     protected Table cont;
+
+    protected boolean animate = true;
 
     public Window(String name, boolean removable){
         super(MonitorSettings.settings, name, !removable, !removable);
@@ -117,13 +121,19 @@ public class Window extends SavedTable{
         invalidate();
     }
 
-    protected void onRemoved(){
-
-    }
-
     @Override
     public final boolean remove(){
+        if(!hasParent()) return false;
+
         onRemoved();
+        if(animate){
+            actions(
+            Actions.alpha(0, 0.f, Interp.pow2Out),
+            Actions.run(super::remove)
+            );
+            return true;
+        }
+
         return super.remove();
     }
 
@@ -141,5 +151,8 @@ public class Window extends SavedTable{
         setSize(Math.max(width, getMinWidth()), Math.max(height, getMinHeight()));
         setPosition(x, y, packAlign);
         keepInStage();
+    }
+
+    protected void onRemoved(){
     }
 }
