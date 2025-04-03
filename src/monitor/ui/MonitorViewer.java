@@ -84,12 +84,12 @@ public class MonitorViewer extends Window{
         }
 
         monitor.setSize((int)(viewWidth * Vars.tilesize), (int)(viewHeight * Vars.tilesize));
-        monitor.resolution = resolution;
+        monitor.resolutionScale = resolution;
     }
 
     public void drawMark(){
         Draw.color(Pal.accent, 0.8f);
-        Lines.dashCircle(x, y, 4);
+        Lines.dashCircle(monitor.x, monitor.y, 4);
         Draw.reset();
     }
 

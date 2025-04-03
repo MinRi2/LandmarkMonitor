@@ -25,8 +25,7 @@ public class Window extends SavedTable{
     public boolean removable;
     public boolean minimized;
 
-    public int packAlign = Align.topLeft;
-    private final Rect lastBounds = new arc.math.geom.Rect();
+    private final Rect lastBounds = new Rect();
 
     private final RotatedImage image = new RotatedImage(Icon.upSmall, 180);
     protected ScrollPane pane;
@@ -34,8 +33,15 @@ public class Window extends SavedTable{
 
     protected boolean animate = true;
 
+    // TODO: snapper
+//    private final BorderSnapper snapper = new BorderSnapper(this);
+
     public Window(String name, boolean removable){
-        super(MonitorSettings.settings, name, !removable, !removable);
+        this(name, removable, !removable, !removable);
+    }
+
+    public Window(String name, boolean removable, boolean savePosition, boolean saveSize){
+        super(MonitorSettings.settings, name, savePosition, saveSize);
 
         this.removable = removable;
 
@@ -92,8 +98,8 @@ public class Window extends SavedTable{
     public void toggle(){
         minimized = !minimized;
 
-        float x = getX(packAlign);
-        float y = getY(packAlign);
+        float x = getX(saveAlign);
+        float y = getY(saveAlign);
         if(minimized){
             minimized();
 
@@ -108,7 +114,7 @@ public class Window extends SavedTable{
             }
         }
 
-        setPosition(x, y, packAlign);
+        setPosition(x, y, saveAlign);
 
         image.rotate(Mathf.num(minimized), 0.25f, Interp.pow2);
 
@@ -128,7 +134,7 @@ public class Window extends SavedTable{
         onRemoved();
         if(animate){
             actions(
-            Actions.alpha(0, 0.f, Interp.pow2Out),
+            Actions.alpha(0, 0.2f, Interp.pow2Out),
             Actions.run(super::remove)
             );
             return true;
@@ -139,17 +145,17 @@ public class Window extends SavedTable{
 
     @Override
     public void pack(){
-        float x = getX(packAlign);
-        float y = getY(packAlign);
+        float x = getX(saveAlign);
+        float y = getY(saveAlign);
         super.pack();
-        setPosition(x, y, packAlign);
+        setPosition(x, y, saveAlign);
     }
 
     public void unpack(){
-        float x = getX(packAlign);
-        float y = getY(packAlign);
+        float x = getX(saveAlign);
+        float y = getY(saveAlign);
         setSize(Math.max(width, getMinWidth()), Math.max(height, getMinHeight()));
-        setPosition(x, y, packAlign);
+        setPosition(x, y, saveAlign);
         keepInStage();
     }
 

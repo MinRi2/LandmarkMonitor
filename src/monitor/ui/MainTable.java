@@ -8,10 +8,14 @@ import arc.scene.actions.*;
 import arc.scene.ui.layout.*;
 import arc.struct.*;
 import arc.util.*;
+import mindustry.*;
+import mindustry.core.*;
+import mindustry.core.Renderer.*;
 import mindustry.game.EventType.*;
 import mindustry.gen.*;
 import mindustry.graphics.*;
 import mindustry.ui.*;
+import mindustry.world.meta.*;
 import monitor.*;
 
 /**
@@ -34,6 +38,12 @@ public class MainTable extends Window{
 
         setup();
         read();
+
+        Vars.renderer.addEnvRenderer(Env.none, () -> {
+            for(MonitorViewer viewer : viewers){
+                viewer.monitor.afterProj();
+            }
+        });
 
         Events.run(Trigger.draw, () -> {
             if(renderingTexture || !monitorGroup.visible) return;
@@ -124,10 +134,6 @@ public class MainTable extends Window{
             monitorViewer.updateInterval = lastViewer.updateInterval;
             monitorViewer.showConfig = lastViewer.showConfig;
         }
-
-        float offset = 64f * (id - 1);
-        monitorViewer.setPosition(Core.scene.getWidth() * 0.3f + offset, Core.scene.getHeight() * 0.5f - offset, Align.bottomLeft);
-        monitorViewer.keepInStage();
 
         monitorViewer.actions(
         Actions.alpha(0),

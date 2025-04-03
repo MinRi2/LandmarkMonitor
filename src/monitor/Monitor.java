@@ -7,7 +7,6 @@ import arc.graphics.gl.*;
 import arc.math.geom.*;
 import arc.util.*;
 import mindustry.*;
-import mindustry.gen.*;
 import mindustry.graphics.*;
 
 import static mindustry.Vars.*;
@@ -21,8 +20,9 @@ public class Monitor implements Disposable{
 
     public float x, y;
     public float width, height;
-    public int resolution = 1;
+    public int resolutionScale = 1;
     private FrameBuffer buffer;
+    private boolean generatingTexture;
 
     public Monitor(float x, float y){
         this.x = x;
@@ -52,85 +52,57 @@ public class Monitor implements Disposable{
         camera.width = width;
         camera.height = height;
 
-        buffer.resize((int)(width * resolution), (int)(height * resolution));
+        generatingTexture = true;
 
         Draw.flush();
+
+        Tmp.m1.set(Draw.proj());
+        Tmp.m2.set(Draw.trans());
+
+        Draw.trans().scale(resolutionScale, resolutionScale);
+
+        buffer.resize((int)(width * resolutionScale), (int)(height * resolutionScale));
         buffer.begin(Color.clear);
-        monitorDraw();
+        rendererDraw();
         buffer.end();
 
+        Draw.proj(Tmp.m1);
+        Draw.trans(Tmp.m2);
         Core.camera = lastCamera;
+
+        generatingTexture = false;
 
         return buffer.getTexture();
     }
 
-    public void monitorDraw(){
-        camera.update();
+    public void afterProj(){
+        if(!generatingTexture) return;
 
-        Tmp.m1.set(Draw.proj());
-        Tmp.m2.set(Draw.trans());
-        Draw.flush();
+        float x = this.x * resolutionScale;
+        float y = this.y * resolutionScale;
+        float width = buffer.getWidth();
+        float height = buffer.getHeight();
+        Draw.proj().setOrtho(x - width/2, y - height/2, width, height);
 
-        Draw.proj().setOrtho(camera.position.x * resolution - buffer.getWidth()/2f, camera.position.y * resolution - buffer.getHeight()/2f, buffer.getWidth(), buffer.getHeight());
-        Draw.trans().scale((float)resolution, (float)resolution);
-
-        renderer.blocks.processBlocks();
-
-        Draw.draw(Layer.floor, renderer.blocks.floor::drawFloor);
-        Draw.draw(Layer.block - 1, renderer.blocks::drawShadows);
-        Draw.draw(Layer.block - 0.09f, () -> {
-            renderer.blocks.floor.beginDraw();
-            renderer.blocks.floor.drawLayer(CacheLayer.walls);
-            renderer.blocks.floor.endDraw();
+        // floor 顶点需要相机原投影矩阵
+//        Draw.draw(Layer.block - 0.09f, () -> {
+//            blocks.floor.beginDraw();
+//            blocks.floor.drawLayer(CacheLayer.walls);
+//            blocks.floor.endDraw();
+//        });
+        Draw.drawRange(Layer.block - 0.09f, () -> {
+            Draw.proj().set(camera.mat);
+        }, () -> {
+            Draw.proj().setOrtho(x - width/2, y - height/2, width, height);
         });
+    }
 
-        //render all matching environments
-        for(var renderer : renderer.envRenderers){
-            if((renderer.env & state.rules.env) == renderer.env){
-                renderer.renderer.run();
-            }
-        }
+    private void rendererDraw(){
+        Draw.sort(true);
 
-        if (Vars.state.rules.lighting && renderer.drawLight) {
-            Draw.draw(Layer.light, renderer.lights::draw);
-        }
-
-        if (Vars.enableDarkness) {
-            Draw.draw(Layer.darkness, renderer.blocks::drawDarkness);
-        }
-
-        Bloom bloom = renderer.bloom;
-        if (bloom != null) {
-            bloom.resize(Core.graphics.getWidth(), Core.graphics.getHeight());
-            bloom.setBloomIntensity((float)Core.settings.getInt("bloomintensity", 6) / 4.0F + 1.0F);
-            bloom.blurPasses = Core.settings.getInt("bloomblur", 1);
-            Draw.draw(Layer.bullet - 0.02f, bloom::capture);
-            Draw.draw(Layer.effect + 0.02f, bloom::render);
-        }
-
-        FrameBuffer effectBuffer = renderer.effectBuffer;
-        if(renderer.animateShields && Shaders.shield != null){
-            Draw.drawRange(Layer.shields, 1f, () -> effectBuffer.begin(Color.clear), () -> {
-                effectBuffer.end();
-                effectBuffer.blit(Shaders.shield);
-            });
-
-            Draw.drawRange(Layer.buildBeam, 1f, () -> effectBuffer.begin(Color.clear), () -> {
-                effectBuffer.end();
-                effectBuffer.blit(Shaders.buildBeam);
-            });
-        }
-
-        if(state.rules.fog) Draw.draw(Layer.fogOfWar, renderer.fog::drawFog);
-
-        renderer.blocks.drawBlocks();
-        Groups.draw.draw(Drawc::draw);
-
-        Draw.proj(Tmp.m1);
-        Draw.trans(Tmp.m2);
-
-        Draw.reset();
         Draw.flush();
+
+        renderer.draw();
     }
 
     @Override
